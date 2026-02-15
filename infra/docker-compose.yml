@@ -1,0 +1,23 @@
+# version attribute removed per Docker deprecation
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: de_postgres
+    environment:
+      POSTGRES_USER: de_user
+      POSTGRES_PASSWORD: de_pass
+      POSTGRES_DB: decision_explorer
+    ports:
+      - "5433:5432"
+    volumes:
+      - de_pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: de_redis
+    ports:
+      - "6380:6379"
+
+volumes:
+  de_pgdata:

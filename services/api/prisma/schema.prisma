@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MapRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum EdgeType {
+  INFLUENCES
+  ENABLES
+  INHIBITS
+  CAUSES
+  DEPENDS_ON
+  RELATES_TO
+}
+
+enum SessionStatus {
+  DRAFT
+  LIVE
+  ENDED
+}
+
+enum SubmissionStatus {
+  PENDING
+  ACCEPTED
+  MERGED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  mapRoles  MapRoleAssignment[]
+  comments  Comment[]
+}
+
+model Map {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  nodes       Node[]
+  edges       Edge[]
+  roles       MapRoleAssignment[]
+  sessions    Session[]
+  comments    Comment[]
+}
+
+model MapRoleAssignment {
+  id     String  @id @default(cuid())
+  mapId  String
+  userId String
+  role   MapRole
+  map    Map    @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([mapId, userId])
+  @@index([userId])
+}
+
+model Node {
+  id          String   @id @default(cuid())
+  mapId       String
+  title       String
+  note        String?
+  tags        String[] @default([])
+  confidence  Float?
+  polarity    Int?
+  x           Float    @default(0)
+  y           Float    @default(0)
+  style       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  map         Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  outgoing    Edge[]   @relation("EdgeSource")
+  incoming    Edge[]   @relation("EdgeTarget")
+  comments    Comment[]
+  @@index([mapId])
+}
+
+model Edge {
+  id          String   @id @default(cuid())
+  mapId       String
+  sourceId    String
+  targetId    String
+  type        EdgeType @default(INFLUENCES)
+  polarity    Int      @default(0)
+  strength    Int      @default(1)
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  map         Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  source      Node     @relation("EdgeSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  target      Node     @relation("EdgeTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  @@index([mapId])
+  @@index([sourceId])
+  @@index([targetId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  mapId     String
+  nodeId    String
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+  map       Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  node      Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([mapId])
+  @@index([nodeId])
+}
+
+model Session {
+  id            String        @id @default(cuid())
+  mapId         String
+  facilitatorId String
+  joinCode      String        @unique
+  status        SessionStatus @default(DRAFT)
+  startedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime      @default(now())
+  map           Map           @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  submissions   Submission[]
+  @@index([mapId])
+}
+
+model Submission {
+  id             String           @id @default(cuid())
+  sessionId      String
+  participant    String?
+  text           String
+  status         SubmissionStatus @default(PENDING)
+  acceptedNodeId String?
+  createdAt      DateTime         @default(now())
+  session        Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([sessionId])
+}

@@ -1,0 +1,16 @@
+{
+    "name": "decision-explorer",
+    "private": true,
+    "workspaces": [
+        "packages/*",
+        "services/*",
+        "apps/*"
+    ],
+    "scripts": {
+        "dev:api": "npm run dev --workspace=@de/api",
+        "dev:web": "npm run dev --workspace=@de/web",
+        "build": "npm run build --workspaces --if-present",
+        "db:up": "docker compose -f infra/docker-compose.yml up -d",
+        "db:down": "docker compose -f infra/docker-compose.yml down"
+    }
+}
